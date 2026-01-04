@@ -3,6 +3,8 @@
 # Hauptplaybook für VM-Provisioning, Docker-Setup und App-Deployment
 # "The Solid Base" - Stabilisierte Version mit Vault, Storage und intelligenter Automation
 
+inventory: ./inventory/hosts.yml
+
 # ============================================================================
 # PLAY 1: Profil-Setup und Konfiguration
 # ============================================================================

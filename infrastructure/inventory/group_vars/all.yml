@@ -1,5 +1,19 @@
----
-# Apps Config (Dashboard entfernt!)
+# ============================================================================
+# GLOBALE KONFIGURATION - NOVACHRIS HOME (GMKtec K12)
+# ============================================================================
+
+# ----------------------------------------------------------------------------
+# 1. STORAGE (Die WD Black NVMe)
+# ----------------------------------------------------------------------------
+storage_config:
+  # Die ID deiner WD Black (aus deiner lsblk-Suche):
+  vm_disk_id: "nvme-WD_BLACK_SN7100_2TB_252726803522"
+  mount_point: "/mnt/data"
+  filesystem: "ext4"
+
+# ----------------------------------------------------------------------------
+# 2. APP DEFINITIONEN (Was ist möglich?)
+# ----------------------------------------------------------------------------
 apps_config:
   wireguard-client:
     vm: "vm-gateway"
@@ -45,49 +59,74 @@ apps_config:
     template: "ollama.yml"
     ports: ["11434:11434"]
 
-# Deployment Profile (damit localhost sie findet)
+  stirling-pdf:
+    vm: "vm-office"
+    type: "docker-compose"
+    template: "stirling-pdf.yml"
+    ports: ["8080:8080"]
+
+  syncthing:
+    vm: "vm-office"
+    type: "docker-compose"
+    template: "syncthing.yml"
+    ports: ["8384:8384", "22000:22000/tcp", "22000:22000/udp", "21027:21027/udp"]
+
+# ----------------------------------------------------------------------------
+# 3. DEPLOYMENT PROFILE (Was wird wirklich installiert?)
+# ----------------------------------------------------------------------------
 deployment_profiles:
-  minimal:
-    description: "Nur Basis-Infrastruktur"
-    vms_to_create: ["vm-gateway"]
-    apps_to_deploy: []
-
   standard:
-    description: "Gateway + Office"
-    vms_to_create: ["vm-gateway", "vm-office"]
-    apps_to_deploy: ["wireguard-client", "traefik", "paperless-ngx", "n8n", "postgresql"]
+    description: "GMKtec K12 - High Performance Setup (32GB RAM)"
+    vms_to_create:
+      # 1. Gateway (Traefik, Wireguard)
+      - name: gateway
+        id: 100
+        memory: 2048        # 2 GB
+        cores: 2
+        disk_size: 20G
 
-  full:
-    description: "Alle VMs + alle Apps"
-    vms_to_create: ["vm-gateway", "vm-office", "vm-ai-lab"]
-    apps_to_deploy: ["wireguard-client", "traefik", "paperless-ngx", "n8n", "postgresql", "whisper", "ollama"]
+      # 2. Office & Services (Paperless, DB, N8N, PDF)
+      - name: office
+        id: 101
+        memory: 8192        # 8 GB (Wichtig für Java/Postgres)
+        cores: 4
+        disk_size: 100G
 
-  repair:
-    description: "Reparatur-Modus"
-    vms_to_create: ["vm-gateway", "vm-office"]
-    apps_to_deploy: ["wireguard-client", "traefik", "postgresql"]
+      # 3. AI-Lab (Ollama, Whisper)
+      # JETZT: Viel RAM (CPU Modus)
+      # SPÄTER: Weniger RAM (wenn RTX 5060 Ti da ist)
+      - name: ai-lab
+        id: 102
+        memory: 18432       # 18 GB RAM
+        cores: 8
+        disk_size: 100G
 
-  custom:
-    description: "Benutzerdefiniert"
-    vms_to_create: []
-    apps_to_deploy: []
-    
-# Globale Variablen
+    apps_to_deploy:
+      # --- Netzwerk ---
+      - wireguard-client  # Wichtig: Name muss genau wie oben in apps_config sein
+      - traefik
+      
+      # --- Office & Workflow ---
+      - postgresql
+      - paperless-ngx
+      - n8n               # Hatte gefehlt! Wichtig für Google Drive
+      - stirling-pdf
+      - syncthing
+      
+      # --- AI ---
+      - ollama
+      - whisper
+
+# ----------------------------------------------------------------------------
+# 4. SYSTEM VARIABLEN
+# ----------------------------------------------------------------------------
 do_validate: true
 app_root: /opt/novachris_home
 default_user: admin_novachris
 project_name: novachris_home
 project_version: "1.0.0"
 enable_firewall: true
-enable_selinux: false
 backup_enabled: true
-backup_retention_days: 30
-backup_base_dir: /mnt/backup
-enable_monitoring: true
-log_level: INFO
-log_dir: /var/log/novachris_home
-system_timezone: UTC
-system_locale: en_US.UTF-8
-dns_servers: ["8.8.8.8", "8.8.4.4"]
+system_timezone: "Europe/Berlin"  # Habe ich mal auf Berlin gestellt für korrekte Logs
+dns_servers: ["8.8.8.8", "1.1.1.1"]
 ssh_port: 22
-ssh_key_type: ed25519
