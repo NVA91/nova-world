@@ -14,7 +14,7 @@
 # Variablen
 # ============================================================================
 
-DOCKER_COMPOSE := docker-compose -f controller/docker-compose.yml
+DOCKER_COMPOSE := docker-compose 
 PROJECT_NAME := unified-ansible-project
 CONTAINER_NAME := ansible-controller
 

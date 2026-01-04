@@ -20,23 +20,23 @@
           - "Profil: {{ wiz_profile }}"
           - "Deployment-Profile: {{ deployment_profiles[wiz_profile].description }}"
 
-    - name: "Setup: Interaktive Abfrage bei Custom-Profil"
-      block:
-        - name: "Frage nach VMs"
-          ansible.builtin.pause:
-            prompt: "Welche VMs sollen erstellt werden? (gateway,office,ai-lab) [gateway,office]"
-          register: vm_input
-
-        - name: "Frage nach Apps"
-          ansible.builtin.pause:
-            prompt: "Welche Apps sollen deployed werden? (wireguard,traefik,paperless,n8n,postgresql,whisper,ollama) [paperless,n8n,postgresql]"
-          register: app_input
-
-        - name: "Setze Custom-Profil-Variablen"
-          ansible.builtin.set_fact:
-            custom_vms: "{{ (vm_input.user_input | default('gateway,office') | split(',')) }}"
-            custom_apps: "{{ (app_input.user_input | default('paperless-ngx,n8n,postgresql') | split(',')) }}"
+    - name: "Frage nach VMs"
       when: wiz_profile == 'custom'
+      ansible.builtin.pause:
+        prompt: "Welche VMs sollen erstellt werden? (gateway,office,ai-lab) [gateway,office]"
+      register: vm_input
+
+    - name: "Frage nach Apps"
+      when: wiz_profile == 'custom'
+      ansible.builtin.pause:
+        prompt: "Welche Apps sollen deployed werden? (wireguard,traefik,paperless,n8n,postgresql,whisper,ollama) [paperless,n8n,postgresql]"
+      register: app_input
+
+    - name: "Setze Custom-Profil-Variablen"
+      when: wiz_profile == 'custom'
+      ansible.builtin.set_fact:
+        custom_vms: "{{ (vm_input.user_input | default('gateway,office') | split(',')) }}"
+        custom_apps: "{{ (app_input.user_input | default('paperless-ngx,n8n,postgresql') | split(',')) }}"
 
     - name: "Setup: Erstelle WIZARD_CONFIG Host"
       ansible.builtin.add_host:
@@ -146,7 +146,7 @@
       ansible.builtin.include_role:
         name: system_setup
       vars:
-        firewall_activation_only: true
+        system_setup_firewall_activation_only: true
       tags:
         - firewall
         - security
